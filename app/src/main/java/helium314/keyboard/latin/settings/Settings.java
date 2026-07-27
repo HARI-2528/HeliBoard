@@ -196,6 +196,7 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_TOOLBAR_SWIPE_DOWN_TO_HIDE = "toolbar_swipe_down_to_hide";
     public static final String PREF_SPELLCHECK_SUGGEST = "spellcheck_suggest";
     public static final String PREF_SHOW_ONLY_TOOLBAR_WITH_HARDWARE_KEYBOARD = "only_toolbar_with_hw_keyboard";
+    public static final String PREF_GROQ_TOKEN = "groq_token";
 
     // Emoji
     public static final String PREF_EMOJI_MAX_SDK = "emoji_max_sdk";

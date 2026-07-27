@@ -184,6 +184,9 @@ object KeyCode {
     const val BACKGROUND_GATHERING =         -10052 // will be useless after removal of gesture data gathering (keep for compatibility)
     const val BACKGROUND_GATHERING_TEMP_OFF =-10053 // will be useless after removal of gesture data gathering (keep for compatibility)
     const val DPAD =                      -10054
+    const val AI_PROOFREAD =              -10055
+    const val AI_REPHRASE =               -10056
+    const val AI_GENERATE =               -10057
 
     // Valid in popups and for toolbar key long press only
     const val KEY_REPEAT =                -11000
@@ -212,6 +215,7 @@ object KeyCode {
         TIMESTAMP, CTRL_LEFT, CTRL_RIGHT, ALT_LEFT, ALT_RIGHT, META_LEFT, META_RIGHT, SEND_INTENT_ONE, SEND_INTENT_TWO,
         SEND_INTENT_THREE, EMOJI_SEARCH, INLINE_EMOJI_SEARCH_DONE, META_LOCK,
         BACKGROUND_GATHERING, BACKGROUND_GATHERING_TEMP_OFF, DPAD,
+        AI_PROOFREAD, AI_REPHRASE, AI_GENERATE,
         -> this
 
         KEY_REPEAT if (longPress) -> this

@@ -26,6 +26,9 @@ import helium314.keyboard.latin.common.moveStepsToCharCount
 import helium314.keyboard.latin.define.ProductionFlags
 import helium314.keyboard.latin.inputlogic.InputLogic
 import helium314.keyboard.latin.settings.Settings
+import android.app.AlertDialog
+import android.widget.EditText
+import helium314.keyboard.latin.utils.AiHelper
 import helium314.keyboard.latin.utils.BackgroundGatheringCache
 import helium314.keyboard.latin.utils.GestureDataGatheringSettings
 import helium314.keyboard.latin.utils.RecapitalizeMode
@@ -131,6 +134,10 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                 latinIME.setGestureDataGatheringMode(latinIME.currentInputEditorInfo, false)
                 return
             }
+        }
+        if (primaryCode == KeyCode.AI_PROOFREAD || primaryCode == KeyCode.AI_REPHRASE || primaryCode == KeyCode.AI_GENERATE) {
+            handleAiAction(primaryCode)
+            return
         }
         if (Settings.getValues().mIsLocked && KeyCode.isIsBlockedWhenLocked(primaryCode))
             return
@@ -505,6 +512,47 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                 }
             }
         }
+    }
+
+    private fun handleAiAction(primaryCode: Int) {
+        val token = latinIME.prefs().getString(Settings.PREF_GROQ_TOKEN, "") ?: ""
+        if (token.isBlank()) {
+            AlertDialog.Builder(latinIME).setTitle("Groq token not set").setMessage("Set it in Debug settings").setPositiveButton("OK", null).show()
+            return
+        }
+        if (primaryCode == KeyCode.AI_PROOFREAD) {
+            val textBefore = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
+            val textAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
+            if (textBefore.isBlank() && textAfter.isBlank()) return
+            connection.selectAll()
+            Thread {
+                val result = AiHelper.groqRequest(textBefore + textAfter, "Fix grammar, spelling, and punctuation. Return ONLY the corrected text, no explanation.", token)
+                latinIME.mHandler.post { connection.commitText(result, 1) }
+            }.start()
+            return
+        }
+        val input = EditText(latinIME)
+        val title = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase tone" else "What to write?"
+        val prompt = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase the following text in a %s tone. Return ONLY the rewritten text, no explanation." else "%s"
+        AlertDialog.Builder(latinIME).setTitle(title).setView(input).setPositiveButton("Go") { d, _ ->
+            val userText = input.text.toString()
+            if (userText.isBlank()) return@setPositiveButton
+            if (primaryCode == KeyCode.AI_REPHRASE) {
+                val textBefore = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
+                val textAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
+                if (textBefore.isBlank() && textAfter.isBlank()) return@setPositiveButton
+                connection.selectAll()
+                Thread {
+                    val result = AiHelper.groqRequest(textBefore + textAfter, prompt.format(userText), token)
+                    latinIME.mHandler.post { connection.commitText(result, 1) }
+                }.start()
+            } else {
+                Thread {
+                    val result = AiHelper.groqRequest(userText, prompt, token)
+                    latinIME.mHandler.post { connection.commitText("$result ", 1) }
+                }.start()
+            }
+        }.setNegativeButton("Cancel", null).show()
     }
 
     companion object {
