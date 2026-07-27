@@ -27,8 +27,10 @@ import helium314.keyboard.latin.define.ProductionFlags
 import helium314.keyboard.latin.inputlogic.InputLogic
 import helium314.keyboard.latin.settings.Settings
 import android.app.AlertDialog
+import android.view.WindowManager
 import android.widget.EditText
 import helium314.keyboard.latin.utils.AiHelper
+import helium314.keyboard.latin.utils.getPlatformDialogThemeContext
 import helium314.keyboard.latin.utils.BackgroundGatheringCache
 import helium314.keyboard.latin.utils.GestureDataGatheringSettings
 import helium314.keyboard.latin.utils.RecapitalizeMode
@@ -516,8 +518,11 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
 
     private fun handleAiAction(primaryCode: Int) {
         val token = latinIME.prefs().getString(Settings.PREF_GROQ_TOKEN, "") ?: ""
+        val mkView = keyboardSwitcher.mainKeyboardView
         if (token.isBlank()) {
-            AlertDialog.Builder(latinIME).setTitle("Groq token not set").setMessage("Set it in Debug settings").setPositiveButton("OK", null).show()
+            val d = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle("Groq token not set").setMessage("Set it in Debug settings").setPositiveButton("OK", null).create()
+            d.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM) }
+            d.show()
             return
         }
         if (primaryCode == KeyCode.AI_PROOFREAD) {
@@ -534,7 +539,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         val input = EditText(latinIME)
         val title = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase tone" else "What to write?"
         val prompt = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase the following text in a %s tone. Return ONLY the rewritten text, no explanation." else "%s"
-        AlertDialog.Builder(latinIME).setTitle(title).setView(input).setPositiveButton("Go") { d, _ ->
+        val dialog = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle(title).setView(input).setPositiveButton("Go") { d, _ ->
             val userText = input.text.toString()
             if (userText.isBlank()) return@setPositiveButton
             if (primaryCode == KeyCode.AI_REPHRASE) {
@@ -552,7 +557,9 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                     latinIME.mHandler.post { connection.commitText("$result ", 1) }
                 }.start()
             }
-        }.setNegativeButton("Cancel", null).show()
+        }.setNegativeButton("Cancel", null).create()
+        dialog.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM) }
+        dialog.show()
     }
 
     companion object {
