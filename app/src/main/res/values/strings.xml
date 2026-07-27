@@ -373,6 +373,9 @@
     <string name="redo" tools:keep="@string/redo">Redo</string>
     <string name="close_history" tools:keep="@string/close_history">Close clipboard history</string>
     <string name="emoji" tools:keep="@string/emoji">Emoji</string>
+    <string name="ai_proofread" tools:keep="@string/ai_proofread">AI Proofread</string>
+    <string name="ai_rephrase" tools:keep="@string/ai_rephrase">AI Rephrase</string>
+    <string name="ai_generate" tools:keep="@string/ai_generate">AI Generate</string>
     <string name="floating" tools:keep="@string/floating">Floating Keyboard</string>
     <!-- Title of the setting to set clipboard toolbar keys -->
     <string name="clipboard_toolbar_keys">Select clipboard toolbar keys</string>
