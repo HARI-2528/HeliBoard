@@ -187,6 +187,16 @@ object KeyCode {
     const val AI_PROOFREAD =              -10055
     const val AI_REPHRASE =               -10056
     const val AI_GENERATE =               -10057
+    const val AI_CUSTOM_1 =               -10058
+    const val AI_CUSTOM_2 =               -10059
+    const val AI_CUSTOM_3 =               -10060
+    const val AI_CUSTOM_4 =               -10061
+    const val AI_CUSTOM_5 =               -10062
+    const val AI_CUSTOM_6 =               -10063
+    const val AI_CUSTOM_7 =               -10064
+    const val AI_CUSTOM_8 =               -10065
+    const val AI_CUSTOM_9 =               -10066
+    const val AI_CUSTOM_10 =              -10067
 
     // Valid in popups and for toolbar key long press only
     const val KEY_REPEAT =                -11000

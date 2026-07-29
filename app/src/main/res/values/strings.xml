@@ -376,6 +376,28 @@
     <string name="ai_proofread" tools:keep="@string/ai_proofread">AI Proofread</string>
     <string name="ai_rephrase" tools:keep="@string/ai_rephrase">AI Rephrase</string>
     <string name="ai_generate" tools:keep="@string/ai_generate">AI Generate</string>
+    <string name="ai_assist">AI Assist</string>
+    <string name="ai_assist_summary">Create and manage custom AI actions</string>
+    <string name="ai_assist_empty">No AI actions yet. Tap + to create one.</string>
+    <string name="ai_assist_add">Add AI action</string>
+    <string name="ai_assist_name">Name</string>
+    <string name="ai_assist_prompt">Prompt</string>
+    <string name="ai_assist_prompt_example">e.g. Rewrite the following text to be more professional. Return ONLY the rewritten text.</string>
+    <string name="ai_assist_needs_input">Requires text input</string>
+    <string name="ai_assist_icon">Icon</string>
+    <string name="ai_assist_delete">Delete</string>
+    <string name="ai_assist_edit">Edit</string>
+    <string name="ai_groq_token">Groq API Token</string>
+    <string name="ai_groq_token_summary">Enter your Groq API key (gsk_...)</string>
+    <string name="ai_token_not_set">Groq token not set</string>
+    <string name="ai_token_set_in_settings">Set it in AI settings</string>
+    <string name="ai_rephrase_tone">Rephrase tone</string>
+    <string name="ai_what_to_write">What to write?</string>
+    <string name="ai_go">Go</string>
+    <string name="ai_cancel">Cancel</string>
+    <string name="ai_proofread_prompt">Fix grammar, spelling, and punctuation. Return ONLY the corrected text, no explanation.</string>
+    <string name="ai_rephrase_prompt">Rephrase the following text in a %s tone. Return ONLY the rewritten text, no explanation.</string>
+    <string name="ai_generate_prompt">Write text based on the user\'s description. Follow the user\'s instruction precisely. Return ONLY the generated text.</string>
     <string name="floating" tools:keep="@string/floating">Floating Keyboard</string>
     <!-- Title of the setting to set clipboard toolbar keys -->
     <string name="clipboard_toolbar_keys">Select clipboard toolbar keys</string>

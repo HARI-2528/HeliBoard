@@ -1,5 +1,6 @@
 import com.android.build.api.variant.ApplicationVariant
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -24,47 +25,64 @@ android {
         proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
 
+    signingConfigs {
+        register("release") {
+            // For GitHub Actions, store keystore as base64 in SIGNING_KEY_STORE_BASE64 secret
+            // and set SIGNING_KEY_STORE_PASSWORD, SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD
+            val keystoreFile = System.getenv("SIGNING_KEY_STORE_FILE")
+            val keystoreBase64 = System.getenv("SIGNING_KEY_STORE_BASE64")
+            if (keystoreBase64 != null) {
+                val decodedFile = File(project.layout.buildDirectory.get().asFile, "release.jks")
+                decodedFile.writeBytes(Base64.getDecoder().decode(keystoreBase64))
+                storeFile = decodedFile
+            } else if (keystoreFile != null) {
+                storeFile = File(keystoreFile)
+            }
+            storePassword = System.getenv("SIGNING_KEY_STORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: "key0"
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: ""
+        }
+    }
+
     buildTypes {
         release {
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null && releaseSigning.storePassword?.isNotEmpty() == true) {
+                signingConfig = releaseSigning
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = false
             isDebuggable = false
             isJniDebuggable = false
         }
         create("nouserlib") { // same as release, but does not allow the user to provide a library
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null && releaseSigning.storePassword?.isNotEmpty() == true) {
+                signingConfig = releaseSigning
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = false
             isDebuggable = false
             isJniDebuggable = false
         }
         debug {
-            // "normal" debug has minify for smaller APK to fit the GitHub 25 MB limit when zipped
-            // and for better performance in case users want to install a debug APK
-            isMinifyEnabled = true
-            isJniDebuggable = false
+            // debug variant kept for IDE debugging
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isJniDebuggable = true
             applicationIdSuffix = ".debug"
         }
         create("runTests") { // build variant for running tests on CI that skips tests known to fail
-            isMinifyEnabled = false
-            isJniDebuggable = false
-        }
-        create("debugNoMinify") { // for faster builds in IDE
-            isDebuggable = true
-            isMinifyEnabled = false
-            isJniDebuggable = false
             signingConfig = signingConfigs.getByName("debug")
-            applicationIdSuffix = ".debug"
+            isMinifyEnabled = false
+            isJniDebuggable = true
         }
 
         androidComponents.onVariants { variant: ApplicationVariant ->
-            if (variant.buildType == "debug") {
-                // got a little too big for GitHub after some dependency upgrades, so we remove the largest dictionary
-                variant.androidResources.ignoreAssetsPatterns = listOf("main_ro.dict")
-                variant.proguardFiles = emptyList()
-                //noinspection ProguardAndroidTxtUsage we intentionally use the "normal" file here
-                variant.proguardFiles.add(project.layout.buildDirectory.file(project.buildFile.parent + "/dontoptimize.pro"))
-                variant.proguardFiles.add(project.layout.buildDirectory.file(project.buildFile.parent + "/proguard-rules.pro"))
-            }
             variant.outputs.forEach { output ->
                 if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
                     output.outputFileName = "HeliBoard_${defaultConfig.versionName}-${variant.buildType}.apk"

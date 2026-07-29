@@ -19,8 +19,8 @@ import helium314.keyboard.latin.settings.getTransitionAnimationScale
 import helium314.keyboard.settings.screens.AboutScreen
 import helium314.keyboard.settings.screens.AdvancedSettingsScreen
 import helium314.keyboard.settings.screens.AppearanceScreen
+import helium314.keyboard.settings.screens.AiSettingsScreen
 import helium314.keyboard.settings.screens.ColorsScreen
-import helium314.keyboard.settings.screens.DebugScreen
 import helium314.keyboard.settings.screens.DictionaryScreen
 import helium314.keyboard.settings.screens.GestureTypingScreen
 import helium314.keyboard.settings.screens.LanguageScreen
@@ -78,6 +78,7 @@ fun SettingsNavHost(
                 onClickLanguage = { navController.navigate(SettingsDestination.Languages) },
                 onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
                 onClickDictionaries = { navController.navigate(SettingsDestination.Dictionaries) },
+                onClickAiAssist = { navController.navigate(SettingsDestination.AI) },
                 onClickBack = ::goBack,
             )
         }
@@ -105,8 +106,8 @@ fun SettingsNavHost(
         composable(SettingsDestination.Advanced) {
             AdvancedSettingsScreen(onClickBack = ::goBack)
         }
-        composable(SettingsDestination.Debug) {
-            DebugScreen(onClickBack = ::goBack)
+        composable(SettingsDestination.AI) {
+            AiSettingsScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.Appearance) {
             AppearanceScreen(onClickBack = ::goBack)
@@ -154,6 +155,7 @@ object SettingsDestination {
     const val DataGathering = "data_gathering" // remove when data gathering phase is done (end of 2026 latest)
     const val DataReview = "data_review" // remove when data gathering phase is done (end of 2026 latest)
     const val Advanced = "advanced"
+    const val AI = "ai_assist"
     const val Debug = "debug"
     const val Appearance = "appearance"
     const val Colors = "colors/"

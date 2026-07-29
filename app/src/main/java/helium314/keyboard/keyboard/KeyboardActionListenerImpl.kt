@@ -4,6 +4,9 @@ package helium314.keyboard.keyboard
 import android.text.InputType
 import android.util.SparseArray
 import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.WindowManager
+import android.widget.EditText
 import android.view.inputmethod.InputMethodSubtype
 import androidx.core.util.forEach
 import androidx.core.view.inputmethod.EditorInfoCompat
@@ -28,6 +31,9 @@ import helium314.keyboard.latin.inputlogic.InputLogic
 import helium314.keyboard.latin.settings.Settings
 import android.app.AlertDialog
 import android.view.WindowManager
+import helium314.keyboard.latin.utils.AiAction
+import helium314.keyboard.latin.utils.AiHelper
+import helium314.keyboard.latin.R
 import android.widget.EditText
 import helium314.keyboard.latin.utils.AiHelper
 import helium314.keyboard.latin.utils.getPlatformDialogThemeContext
@@ -139,6 +145,11 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         }
         if (primaryCode == KeyCode.AI_PROOFREAD || primaryCode == KeyCode.AI_REPHRASE || primaryCode == KeyCode.AI_GENERATE) {
             handleAiAction(primaryCode)
+            return
+        }
+        if (primaryCode in KeyCode.AI_CUSTOM_1..KeyCode.AI_CUSTOM_10) {
+            val action = AiAction.findActionByKeyCode(latinIME, primaryCode)
+            if (action != null) handleAiAction(action)
             return
         }
         if (Settings.getValues().mIsLocked && KeyCode.isIsBlockedWhenLocked(primaryCode))
@@ -520,7 +531,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         val token = latinIME.prefs().getString(Settings.PREF_GROQ_TOKEN, "") ?: ""
         val mkView = keyboardSwitcher.mainKeyboardView
         if (token.isBlank()) {
-            val d = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle("Groq token not set").setMessage("Set it in Debug settings").setPositiveButton("OK", null).create()
+            val d = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle(R.string.ai_token_not_set).setMessage(R.string.ai_token_set_in_settings).setPositiveButton(android.R.string.ok, null).create()
             d.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG) }
             d.show()
             return
@@ -531,35 +542,119 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
             if (textBefore.isBlank() && textAfter.isBlank()) return
             connection.selectAll()
             Thread {
-                val result = AiHelper.groqRequest(textBefore + textAfter, "Fix grammar, spelling, and punctuation. Return ONLY the corrected text, no explanation.", token)
+                val result = AiHelper.groqRequest(textBefore + textAfter, latinIME.getString(R.string.ai_proofread_prompt), token)
                 latinIME.mHandler.post { connection.commitText(result, 1) }
             }.start()
             return
         }
-        val input = EditText(latinIME)
-        val title = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase tone" else "What to write?"
-        val prompt = if (primaryCode == KeyCode.AI_REPHRASE) "Rephrase the following text in a %s tone. Return ONLY the rewritten text, no explanation." else "%s"
-        val dialog = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle(title).setView(input).setPositiveButton("Go") { d, _ ->
-            val userText = input.text.toString()
-            if (userText.isBlank()) return@setPositiveButton
-            if (primaryCode == KeyCode.AI_REPHRASE) {
-                val textBefore = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
-                val textAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
-                if (textBefore.isBlank() && textAfter.isBlank()) return@setPositiveButton
-                connection.selectAll()
-                Thread {
-                    val result = AiHelper.groqRequest(textBefore + textAfter, prompt.format(userText), token)
-                    latinIME.mHandler.post { connection.commitText(result, 1) }
-                }.start()
-            } else {
-                Thread {
-                    val result = AiHelper.groqRequest(userText, prompt, token)
-                    latinIME.mHandler.post { connection.commitText("$result ", 1) }
-                }.start()
+        val inflater = LayoutInflater.from(latinIME)
+        val dialogView = inflater.inflate(R.layout.ai_input_dialog, null)
+        val input = dialogView.findViewById<EditText>(R.id.ai_input_field).apply {
+            isFocusable = true
+            isFocusableInTouchMode = true
+            isClickable = true
+            requestFocus()
+        }
+        val title = if (primaryCode == KeyCode.AI_REPHRASE) R.string.ai_rephrase_tone else R.string.ai_what_to_write
+        val prompt = if (primaryCode == KeyCode.AI_REPHRASE) R.string.ai_rephrase_prompt else R.string.ai_generate_prompt
+        val dialog = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME))
+            .setTitle(title)
+            .setView(dialogView)
+            .setPositiveButton(R.string.ai_go) { d, _ ->
+                val userText = input.text.toString()
+                if (userText.isBlank()) return@setPositiveButton
+                if (primaryCode == KeyCode.AI_REPHRASE) {
+                    val textBefore = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
+                    val textAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
+                    if (textBefore.isBlank() && textAfter.isBlank()) return@setPositiveButton
+                    connection.selectAll()
+                    Thread {
+                        val result = AiHelper.groqRequest(textBefore + textAfter, latinIME.getString(prompt).format(userText), token)
+                        latinIME.mHandler.post { connection.commitText(result, 1) }
+                    }.start()
+                } else {
+                    Thread {
+                        val result = AiHelper.groqRequest(userText, latinIME.getString(prompt), token)
+                        latinIME.mHandler.post { connection.commitText("$result ", 1) }
+                    }.start()
+                }
             }
-        }.setNegativeButton("Cancel", null).create()
-        dialog.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE) }
+            .setNegativeButton(R.string.ai_cancel, null)
+            .create()
+        dialog.window?.let { w ->
+            w.attributes?.token = mkView?.windowToken
+            w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
+            w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            w.setBackgroundDrawableResource(android.R.color.transparent)
+        }
         dialog.show()
+        dialogView.post {
+            input.isFocusableInTouchMode = true
+            input.requestFocus()
+            val imm = latinIME.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun handleAiAction(action: AiAction) {
+        val token = latinIME.prefs().getString(Settings.PREF_GROQ_TOKEN, "") ?: ""
+        val mkView = keyboardSwitcher.mainKeyboardView
+        if (token.isBlank()) {
+            val d = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle(R.string.ai_token_not_set).setMessage(R.string.ai_token_set_in_settings).setPositiveButton(android.R.string.ok, null).create()
+            d.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG) }
+            d.show()
+            return
+        }
+
+        if (action.needsInput) {
+            val inflater = LayoutInflater.from(latinIME)
+            val dialogView = inflater.inflate(R.layout.ai_input_dialog, null)
+            val input = dialogView.findViewById<EditText>(R.id.ai_input_field).apply {
+                isFocusable = true
+                isFocusableInTouchMode = true
+                isClickable = true
+                requestFocus()
+            }
+            val dialog = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME))
+                .setTitle(action.name)
+                .setView(dialogView)
+                .setPositiveButton(R.string.ai_go) { d, _ ->
+                    val userText = input.text.toString()
+                    if (userText.isBlank()) return@setPositiveButton
+                    val selectedText = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
+                    val selectedAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
+                    val fullText = selectedText + selectedAfter
+                    val finalPrompt = if (action.prompt.contains("%s")) action.prompt.format(userText) else action.prompt
+                    Thread {
+                        val result = AiHelper.groqRequest(fullText, finalPrompt, token)
+                        latinIME.mHandler.post { connection.commitText(result, 1) }
+                    }.start()
+                }
+                .setNegativeButton(R.string.ai_cancel, null)
+                .create()
+            dialog.window?.let { w ->
+                w.attributes?.token = mkView?.windowToken
+                w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
+                w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+                w.setBackgroundDrawableResource(android.R.color.transparent)
+            }
+            dialog.show()
+            dialogView.post {
+                input.isFocusableInTouchMode = true
+                input.requestFocus()
+                val imm = latinIME.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+        } else {
+            val textBefore = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
+            val textAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
+            val fullText = textBefore + textAfter
+            if (fullText.isBlank()) return
+            Thread {
+                val result = AiHelper.groqRequest(fullText, action.prompt, token)
+                latinIME.mHandler.post { connection.commitText(result, 1) }
+            }.start()
+        }
     }
 
     companion object {
