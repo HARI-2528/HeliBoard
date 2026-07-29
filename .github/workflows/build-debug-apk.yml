@@ -2,11 +2,18 @@ name: Build release APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.configureondemand=true"
 
     steps:
       - uses: actions/checkout@v4
@@ -16,24 +23,32 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
 
-      - uses: gradle/actions/setup-gradle@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-read-only: ${{ github.event_name != 'push' }}
+          cache-key-prefix: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
+        run: ./gradlew :app:assembleRelease --build-cache --stacktrace --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: HeliBoard-release
           path: app/build/outputs/apk/release/*-release.apk
+          retention-days: 7
 
       - name: Archive reports for failed job
         uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
         with:
           name: reports
           path: '*/build/reports'
-        if: ${{ failure() }}
+          retention-days: 3
