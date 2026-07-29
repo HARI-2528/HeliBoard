@@ -542,7 +542,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
             if (textBefore.isBlank() && textAfter.isBlank()) return
             connection.selectAll()
             Thread {
-                val result = AiHelper.groqRequest(textBefore + textAfter, latinIME.getString(R.string.ai_proofread_prompt), token)
+                val result = AiHelper.groqRequestStreaming(textBefore + textAfter, latinIME.getString(R.string.ai_proofread_prompt), token, { })
                 latinIME.mHandler.post { connection.commitText(result, 1) }
             }.start()
             return
@@ -569,12 +569,12 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                     if (textBefore.isBlank() && textAfter.isBlank()) return@setPositiveButton
                     connection.selectAll()
                     Thread {
-                        val result = AiHelper.groqRequest(textBefore + textAfter, latinIME.getString(prompt).format(userText), token)
+                        val result = AiHelper.groqRequestStreaming(textBefore + textAfter, latinIME.getString(prompt).format(userText), token, { })
                         latinIME.mHandler.post { connection.commitText(result, 1) }
                     }.start()
                 } else {
                     Thread {
-                        val result = AiHelper.groqRequest(userText, latinIME.getString(prompt), token)
+                        val result = AiHelper.groqRequestStreaming(userText, latinIME.getString(prompt), token, { })
                         latinIME.mHandler.post { connection.commitText("$result ", 1) }
                     }.start()
                 }
@@ -626,7 +626,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                     val fullText = selectedText + selectedAfter
                     val finalPrompt = if (action.prompt.contains("%s")) action.prompt.format(userText) else action.prompt
                     Thread {
-                        val result = AiHelper.groqRequest(fullText, finalPrompt, token)
+                        val result = AiHelper.groqRequestStreaming(fullText, finalPrompt, token, { })
                         latinIME.mHandler.post { connection.commitText(result, 1) }
                     }.start()
                 }
@@ -651,7 +651,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
             val fullText = textBefore + textAfter
             if (fullText.isBlank()) return
             Thread {
-                val result = AiHelper.groqRequest(fullText, action.prompt, token)
+                val result = AiHelper.groqRequestStreaming(fullText, action.prompt, token, { })
                 latinIME.mHandler.post { connection.commitText(result, 1) }
             }.start()
         }
