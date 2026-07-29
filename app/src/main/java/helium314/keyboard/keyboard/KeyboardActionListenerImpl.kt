@@ -521,7 +521,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
         val mkView = keyboardSwitcher.mainKeyboardView
         if (token.isBlank()) {
             val d = AlertDialog.Builder(getPlatformDialogThemeContext(latinIME)).setTitle("Groq token not set").setMessage("Set it in Debug settings").setPositiveButton("OK", null).create()
-            d.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM) }
+            d.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG) }
             d.show()
             return
         }
@@ -558,7 +558,7 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                 }.start()
             }
         }.setNegativeButton("Cancel", null).create()
-        dialog.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM) }
+        dialog.window?.let { w -> w.attributes?.token = mkView?.windowToken; w.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG); w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE) }
         dialog.show()
     }
 
