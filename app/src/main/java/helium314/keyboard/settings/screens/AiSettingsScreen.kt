@@ -46,6 +46,7 @@ import helium314.keyboard.latin.R
 import helium314.keyboard.latin.utils.AiAction
 import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.settings.BackButton
+import helium314.keyboard.settings.Setting
 import helium314.keyboard.latin.utils.Theme
 import helium314.keyboard.latin.utils.previewDark
 import helium314.keyboard.settings.initPreview
