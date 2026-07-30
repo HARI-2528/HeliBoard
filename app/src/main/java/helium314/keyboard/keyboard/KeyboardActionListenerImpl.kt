@@ -624,10 +624,19 @@ class KeyboardActionListenerImpl(private val latinIME: LatinIME, private val inp
                     val selectedText = connection.getTextBeforeCursor(60000, 0)?.toString() ?: ""
                     val selectedAfter = connection.getTextAfterCursor(60000, 0)?.toString() ?: ""
                     val fullText = selectedText + selectedAfter
-                    val finalPrompt = if (action.prompt.contains("%s")) action.prompt.format(userText) else action.prompt
-                    connection.selectAll()
+                    val finalPrompt = if (action.prompt.isBlank()) {
+                        userText
+                    } else if (action.prompt.contains("%s")) {
+                        action.prompt.format(userText)
+                    } else {
+                        "${action.prompt}\n$userText"
+                    }
+                    val finalMessage = if (fullText.isBlank()) "Generate output based on the instructions." else fullText
+                    if (fullText.isNotBlank()) {
+                        connection.selectAll()
+                    }
                     Thread {
-                        val result = AiHelper.groqRequestStreaming(fullText, finalPrompt, token, { })
+                        val result = AiHelper.groqRequestStreaming(finalMessage, finalPrompt, token, { })
                         latinIME.mHandler.post { connection.commitText(result, 1) }
                     }.start()
                 }
