@@ -36,13 +36,14 @@ object AiHelper {
     }
 
     fun groqRequestStreaming(text: String, systemPrompt: String, token: String, onChunk: (String) -> Unit): String {
-        val augmentedPrompt = "$systemPrompt\n\nCRITICAL: Return ONLY the final answer enclosed in {}. Do not include any other text, thinking, or conversational phrases."
+        val augmentedPrompt = "$systemPrompt\n\nCRITICAL: You MUST return a JSON object with a single key \"answer\" containing your final output. DO NOT include any other text, thinking, or conversational phrases."
         val body = JSONObject().apply {
             put("model", "llama-3.1-8b-instant")
             put("messages", org.json.JSONArray().apply {
                 put(JSONObject().apply { put("role", "system"); put("content", augmentedPrompt) })
                 put(JSONObject().apply { put("role", "user"); put("content", text) })
             })
+            put("response_format", JSONObject().apply { put("type", "json_object") })
             put("temperature", 0.3)
             put("max_tokens", 1024)
             put("stream", true)
@@ -82,7 +83,12 @@ object AiHelper {
         }
         val streamError = error.get()
         if (streamError != null) throw RuntimeException("Streaming error: $streamError")
-        return extractAnswer(fullText.toString().trim())
+        val finalResponse = fullText.toString().trim()
+        return try {
+            JSONObject(finalResponse).getString("answer").trim()
+        } catch (e: Exception) {
+            extractAnswer(finalResponse)
+        }
     }
     fun extractAnswer(response: String): String {
         val start = response.indexOf('{')
